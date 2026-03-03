@@ -91,11 +91,12 @@ This same pattern can be adapted for:
 
 ## Screenshots
 
-The `screenshots` folder contains:
+### Workflow Overview
+![Workflow Overview](./screenshots/flow-overview.png)
 
-- `flow-overview.png` - full n8n workflow
-- `webhook-output.png` - successful webhook response
-- `google-sheets-log.png` - logged rows in Google Sheets
+Additional proof images are available in the `screenshots` folder:
+- `webhook-output.png`
+- `google-sheets-log.png`
 
 ## Key Lessons Learned
 
