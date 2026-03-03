@@ -1,0 +1,338 @@
+{
+  "name": "Question Rewritter + Ollama + Google Sheets Logger",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a31d81b7-2f07-4fb7-b86f-6c7cf8c2b3a5",
+              "name": "raw_question",
+              "value": "={{$json.body.question}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -64,
+        -32
+      ],
+      "id": "cc4a89b5-a3a1-4440-a9ee-95d1a0e68ff6",
+      "name": "Set Raw Question"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "557b51af-b6ce-40f5-9065-b8301786cc2e",
+              "name": "raw_question",
+              "value": "={{$json.raw_question}}",
+              "type": "string"
+            },
+            {
+              "id": "7957e36d-7da7-4f65-874a-2c2d91b323bd",
+              "name": "rewritten_prompt",
+              "value": "=Rewrite and answer the user's question clearly, with practical steps. Keep it concise and actionable. User question: {{$json.raw_question}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        176,
+        -32
+      ],
+      "id": "6a2ccdf9-38e5-4497-8190-b8a4af84edb9",
+      "name": "Set Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:11434/api/generate",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "gemma3:1b"
+            },
+            {
+              "name": "prompt",
+              "value": "={{$json.rewritten_prompt}}"
+            },
+            {
+              "name": "stream",
+              "value": "={{false}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        416,
+        -32
+      ],
+      "id": "e76072d6-bc70-4615-b1d6-4fad1efcc879",
+      "name": "Call Ollama"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "21336f4d-8951-469d-b4b0-d4b258ee0c0d",
+              "name": "raw_question",
+              "value": "={{$node[\"Set Raw Question\"].json[\"raw_question\"]}}",
+              "type": "string"
+            },
+            {
+              "id": "bac06d1b-b09b-4c2d-a7fe-4dde66c8296e",
+              "name": "rewritten_prompt",
+              "value": "={{$node[\"Set Prompt\"].json[\"rewritten_prompt\"]}}",
+              "type": "string"
+            },
+            {
+              "id": "9a0e68c8-65d0-4808-8263-ee1f30aec582",
+              "name": "final_answer",
+              "value": "={{$json.response}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        624,
+        -32
+      ],
+      "id": "e6d19e7a-ad4f-40d3-8332-26936c62a34a",
+      "name": "Format Output"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ask-ai",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -272,
+        -32
+      ],
+      "id": "842ff7f5-d21c-434f-a17a-7a86984b57d8",
+      "name": "Webhook",
+      "webhookId": "2cc8f1c8-973f-4d5e-bd39-9fafef64cf7c"
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        848,
+        -32
+      ],
+      "id": "3718881e-0054-4533-897a-b1518dfa72ff",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1XSDXfJA7LnsOeKHS2GgmCJYocjgrbS3aURUmzf5-C3o/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1XSDXfJA7LnsOeKHS2GgmCJYocjgrbS3aURUmzf5-C3o/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ new Date().toISOString() }}",
+            "raw_question": "={{$json.raw_question}}",
+            "rewritten_prompt": "={{$json.rewritten_prompt}}",
+            "final_answer": "={{$json.final_answer}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "raw_question",
+              "displayName": "raw_question",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "rewritten_prompt",
+              "displayName": "rewritten_prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "final_answer",
+              "displayName": "final_answer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1072,
+        -32
+      ],
+      "id": "67e3b080-9da2-451b-8f96-e851790adc42",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FAn9YbEdI0bhtps6",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Set Raw Question": {
+      "main": [
+        [
+          {
+            "node": "Set Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Prompt": {
+      "main": [
+        [
+          {
+            "node": "Call Ollama",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Ollama": {
+      "main": [
+        [
+          {
+            "node": "Format Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Set Raw Question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Output": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "c7877511-d0c7-420b-a572-e7a6b473f275",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "00e0632f354595b798ac0b3cab6447d997b6dd6ac207638e79734b97430bbf9b"
+  },
+  "id": "MOkgZlZorsP4D6AC",
+  "tags": [
+    {
+      "name": "Ollama",
+      "id": "yS94Dso2rsXWXaky",
+      "updatedAt": "2026-03-03T12:51:29.568Z",
+      "createdAt": "2026-03-03T12:51:29.568Z"
+    },
+    {
+      "name": "Google Sheets",
+      "id": "fQKvN8PqfFm15z8Y",
+      "updatedAt": "2026-03-03T12:51:38.544Z",
+      "createdAt": "2026-03-03T12:51:38.544Z"
+    },
+    {
+      "name": "0Auth",
+      "id": "UJq2dmEMrZY1l70H",
+      "updatedAt": "2026-03-03T12:51:56.549Z",
+      "createdAt": "2026-03-03T12:51:56.549Z"
+    }
+  ]
+}
